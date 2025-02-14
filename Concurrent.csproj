@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Concurrent.UnitTest\**" />
+    <EmbeddedResource Remove="Concurrent.UnitTest\**" />
+    <None Remove="Concurrent.UnitTest\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="xunit.assert" Version="2.9.3" />
     <PackageReference Include="xunit.extensibility.core" Version="2.9.3" />
   </ItemGroup>
