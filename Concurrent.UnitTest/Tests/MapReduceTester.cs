@@ -8,7 +8,7 @@ namespace Concurrent.UnitTest.Tests
         public void Test()
         {
             Console.WriteLine("\nTeste MapReduce");
-            var resultado = MapReduce.Run(Enumerable.Range(0,10), valor => valor % 2 == 0, valor => valor *3 + 10, null);
+            var resultado = MapReduce.Run(Enumerable.Range(0,10), valor => valor % 2 == 0, valor => valor *3 + 10, null, null);
             var r = resultado.Select(x => (x-10)/3).Order().ToList();
 
             Assert.Equal(resultado.Order(), new List<int> { 10, 16, 22, 28, 34 });
@@ -16,26 +16,23 @@ namespace Concurrent.UnitTest.Tests
         }
 
         /// <summary>
-        /// Not clear yet how to implement a Maximum Reduce operation in Parallel.
+        /// Not clear yet why the results are not consistent between individual runs.
+        /// Perhaps, there is some problem with the reducer operation.
         /// </summary>
 
         [Fact]
         public void TestMaximumValue()
         {
             Console.WriteLine("\nTeste Maximum Value From MapReduce");
-            Func<List<int>, List<int>>? reducer = (input) => {
+            Func<int, int,int>? reducer = (x,y) => {
 
-                var maxValue = int.MinValue;
-
-                foreach (var x in input)
+                if (x < y)
                 {
-                    if (maxValue < x)
-                    {
-                        maxValue = x;
-                    }
+                    return y;
                 }
-                
-                return new List<int> (maxValue);
+                else{
+                    return x;
+                }
             };
 
             Func<int, int> mapper = value => value * 3 + 10;
@@ -44,12 +41,16 @@ namespace Concurrent.UnitTest.Tests
 
             var input = Enumerable.Range(0,10).ToList();
 
-            var resultado = MapReduce.Run(input, filter, mapper, reducer);
+            /// Running the test several times in order to ensure that it is not a random result.
+            for(int i=0 ; i< 10_000 ; i++)
+            {
+                var resultado = MapReduce.Run(input, filter, mapper, reducer);
 
-            Assert.Equal(resultado.Order(), new List<int> {40});
+                var expected = 34;
 
+                Assert.Equal(expected, resultado);
+            }
         }
-
 
         [Fact]
         public void TestSpeed()
@@ -64,7 +65,7 @@ namespace Concurrent.UnitTest.Tests
                 return valor *3 + 10;
             };
             var startTime = Stopwatch.GetTimestamp();
-            var resultadoEmParalelo = MapReduce.Run(lista, filtro, transform, null);
+            var resultadoEmParalelo = MapReduce.Run(lista, filtro, transform, null, null);
             var endTime  = Stopwatch.GetTimestamp();
 
             var elapsedTimeInParalel = endTime - startTime;
