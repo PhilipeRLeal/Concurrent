@@ -8,10 +8,45 @@ namespace Concurrent.UnitTest.Tests
         public void Test()
         {
             Console.WriteLine("\nTeste MapReduce");
-            var resultado = MapReduce.Run(Enumerable.Range(0,10), valor => valor *3 + 10, valor => valor % 2 == 0);
+            var resultado = MapReduce.Run(Enumerable.Range(0,10), valor => valor % 2 == 0, valor => valor *3 + 10, null);
             var r = resultado.Select(x => (x-10)/3).Order().ToList();
 
             Assert.Equal(resultado.Order(), new List<int> { 10, 16, 22, 28, 34 });
+
+        }
+
+        /// <summary>
+        /// Not clear yet how to implement a Maximum Reduce operation in Parallel.
+        /// </summary>
+
+        [Fact]
+        public void TestMaximumValue()
+        {
+            Console.WriteLine("\nTeste Maximum Value From MapReduce");
+            Func<List<int>, List<int>>? reducer = (input) => {
+
+                var maxValue = int.MinValue;
+
+                foreach (var x in input)
+                {
+                    if (maxValue < x)
+                    {
+                        maxValue = x;
+                    }
+                }
+                
+                return new List<int> (maxValue);
+            };
+
+            Func<int, int> mapper = value => value * 3 + 10;
+
+            Func<int, bool> filter = value => value % 2 == 0;
+
+            var input = Enumerable.Range(0,10).ToList();
+
+            var resultado = MapReduce.Run(input, filter, mapper, reducer);
+
+            Assert.Equal(resultado.Order(), new List<int> {40});
 
         }
 
@@ -29,7 +64,7 @@ namespace Concurrent.UnitTest.Tests
                 return valor *3 + 10;
             };
             var startTime = Stopwatch.GetTimestamp();
-            var resultadoEmParalelo = MapReduce.Run(lista, transform, filtro);
+            var resultadoEmParalelo = MapReduce.Run(lista, filtro, transform, null);
             var endTime  = Stopwatch.GetTimestamp();
 
             var elapsedTimeInParalel = endTime - startTime;
