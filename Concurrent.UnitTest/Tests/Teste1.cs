@@ -14,7 +14,7 @@ namespace Concurrent.UnitTest.Tests
 
             for ( int i = 0 ; i < nTests ; i++ )
             {
-                var result = Test(0,10);
+                var result = Test(0,10).OrderBy(x => x).ToList();
 
                 repetitions[i] = result;
             }
@@ -28,29 +28,16 @@ namespace Concurrent.UnitTest.Tests
 
             Action<int> aggregate = (value) =>
             {
-                lock(result)
-                {
-                    if (!result.Contains(value))
-                    {
-                        result.Add(value);
-                    }
-                }
+                result.Add(value);
             };
 
             Func<int> initializer = () => 0;
 
             Func<int, ParallelLoopState, int, int> body = (i, state, threadAcum) =>
             {
-                if (threadAcum > 0)
+                if (i % 2 == 0)
                 {
-                    state.Break();
-                }
-                else
-                {
-                    if (i % 2 == 0)
-                    {
-                        threadAcum += i;
-                    }
+                    threadAcum += i;
                 }
 
                 return threadAcum;
@@ -68,6 +55,7 @@ namespace Concurrent.UnitTest.Tests
         static void ValidateResults(List<int>[] repetitions)
         {
             bool testIsASuccess = true;
+            string message = "";
 
             for ( int first = 0 ; testIsASuccess && first < repetitions.Length ; first++ )
             {
@@ -75,12 +63,18 @@ namespace Concurrent.UnitTest.Tests
                 {
                     var rep = repetitions[first];
                     var rep2 = repetitions[second];
-                    if ( !Enumerable.SequenceEqual(rep.OrderBy(x => x), rep2.OrderBy(x => x)) )
+                    if (!Enumerable.SequenceEqual(rep, rep2) )
                     {
                         Console.WriteLine("Routine 1 is not consistent");
 
-                        //Console.WriteLine($"rep[{first}]:{string.Join(',', rep)}");
-                        //Console.WriteLine($"rep[{second}]:{string.Join(',', rep2)}");
+                        var difference = rep.Except(rep2).ToList();
+
+                        message = $"Erro durante a execução da rotina em paralelo. Os resultados processados serialmente são diferentes daqueles processados em paralelo. " +
+                                  $"Ref[1]: {string.Join(',', rep)}" +
+                                  $"Ref[2]: {string.Join(',', rep2)}" +
+                                  $"Difereça entre sequências:{string.Join(',', difference)}";
+
+                        Console.WriteLine(message);
 
                         testIsASuccess = false;
                     }
@@ -88,7 +82,7 @@ namespace Concurrent.UnitTest.Tests
             }
 
             // Este método não deve retornar verdadeiro
-            Assert.False(testIsASuccess);
+            Assert.True(testIsASuccess, message);
         }
 
     }

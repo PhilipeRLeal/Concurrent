@@ -1,4 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Concurrent.UnitTest.Tests
 {
@@ -9,11 +12,12 @@ namespace Concurrent.UnitTest.Tests
         {
             var options = new ParallelOptions();
             options.MaxDegreeOfParallelism = -1; // -1 is for unlimited. 1 is for sequential.
-            var resultado = new ConcurrentDictionary<string, int>();
+            var resultado = new ConcurrentDictionary<int, string>();
+            
             try
             {
                 int N = 100;
-
+                var seq = Enumerable.Range(0, N);
                 Parallel.For(
                         0,
                         N,
@@ -21,34 +25,33 @@ namespace Concurrent.UnitTest.Tests
                         (i) =>
                         {
                             var key = $"Thread ={Thread.CurrentThread.ManagedThreadId}";
-                            lock( resultado )
-                            {
-                                if ( !resultado.ContainsKey(key) )
-                                {
-                                    resultado.TryAdd(key, i);
-                                }
-                            }
+                            resultado.TryAdd(seq.ElementAt(i), key);
                         }
                     );
 
-                if( Enumerable.Range(0, N).All(x => resultado.Values.Contains(x)) )
+                if( Enumerable.Range(0, N).All(x => resultado.Keys.Contains(x)) )
                 {
                     Console.WriteLine("SUCCESS! Teste 2 is consistent");
+                    Assert.True(true);
                 }
-                else{
+                else
+                {
                     Console.WriteLine("Routine 2 is not consistent");
-                    Console.WriteLine($"Missing elements: {string.Join(";", Enumerable.Range(0, N).Where(x => !resultado.Values.Contains(x)))}");
+                    var message = $"Missing elements: {string.Join(";", Enumerable.Range(0, N).Where(x => !resultado.Keys.Contains(x)))}";
+                    Console.WriteLine(message);
+                    Assert.Fail(message);
                 }
             }
             // No exception is expected in this example, but if one is still thrown from a task,
             // it will be wrapped in AggregateException and propagated to the main thread.
             catch ( AggregateException e )
             {
-                Console.WriteLine("Parallel.For has thrown the following (unexpected) exception:\n{0}", e);
+                var message = $"Parallel.For has thrown the following (unexpected) exception:\n{e}";
+                Console.WriteLine(message);
                 Console.WriteLine("Routine 2 is not consistent");
 
                 // Este método não deve retornar verdadeiro
-                Assert.False(true);
+                Assert.Fail(message);
             }
         }
     }

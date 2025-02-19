@@ -70,7 +70,7 @@ namespace Concurrent.UnitTest.Tests
                     var rep2 = repetitions[second];
                     if ( !Enumerable.SequenceEqual(rep.OrderBy(x => x), rep2.OrderBy(x => x)) )
                     {
-                        Console.WriteLine("Routine 3 is not consistent");
+                        Assert.Fail("Routine 3 is not consistent");
 
                         //Console.WriteLine($"rep[{first}]:{string.Join(',', rep)}");
                         //Console.WriteLine($"rep[{second}]:{string.Join(',', rep2)}");
